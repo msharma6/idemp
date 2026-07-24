@@ -1,1 +1,15 @@
+# Python version requirement: >=3.10,<3.14
+# (CrewAI does not yet support Python 3.14+ as of mid-2026 -- if your
+# system's default Python is 3.14 or newer, install Python 3.12 alongside
+# it and use `py -3.12` for everything in this project. See
+# TESTING_STEPS.md's "Windows/PowerShell gotchas" section for the full
+# Windows setup path -- this exact issue was hit and confirmed during
+# real testing.)
+
 psycopg2-binary>=2.9
+fastapi>=0.110
+uvicorn>=0.27
+requests>=2.31
+mcp>=1.0
+langgraph>=0.2
+crewai>=0.80

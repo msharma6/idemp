@@ -8,6 +8,23 @@ more than once — even across retries, crashes, and duplicate agent calls.
 Not tied to any orchestrator. Any agent, in any framework or language,
 that can make an HTTP call (or use the SDK, or an MCP client) can use this.
 
+## Requirements
+
+- **Python >=3.10, <3.14** — CrewAI does not yet support Python 3.14+.
+  If your system's default Python is 3.14 or newer, install Python 3.12
+  alongside it and use `py -3.12` for every command in this project (see
+  `TESTING_STEPS.md`'s Windows/PowerShell gotchas section for the full
+  setup path — this was hit and resolved during real testing).
+- PostgreSQL, running locally or reachable over the network. **You need
+  a known password for the `postgres` user** — if you're not certain
+  what it is (very common if Postgres was installed a while ago, or came
+  bundled with something else), see the "Postgres password" section at
+  the top of `TESTING_STEPS.md` for a full reset procedure, covering
+  Windows, Mac, and Linux.
+- **Tested and confirmed working end-to-end on both Linux and Windows**
+  (PowerShell) — every scenario below has been personally run and
+  verified on real hardware, not just asserted.
+
 ## The two problems this solves
 
 1. **Silent state overwrites** — two agents update the same shared record
@@ -84,6 +101,9 @@ Two additional integration surfaces sit on top of the same service:
   fires once even when the tool is called twice.
 
 **Proof / test scripts**
+- `reset_db.py` — resets both schemas to a clean state. A real script
+  file rather than an inline snippet, specifically because multi-line
+  `python -c "..."` commands don't work in Windows cmd/PowerShell.
 - `demo.py` — three StateStore scenarios: unprotected race (the problem),
   protected race (CAS catches it), leasing with auto-expiry.
 - `demo_idempotency.py` — five Action Ledger scenarios: duplicate agents,
@@ -93,11 +113,16 @@ Two additional integration surfaces sit on top of the same service:
   HTTP-only clients (no shared code/imports) proving two different
   "frameworks" can race against the live service and get a correctly
   arbitrated result.
+- `test_mcp.py` — direct test of the MCP server's tool functions.
 
 ## Running it
 
-See `TESTING_STEPS.md` for the exact, verified, copy-pasteable sequence
-covering every piece above. Short version:
+See `TESTING_STEPS.md` for the exact, verified, copy-pasteable sequence —
+**it includes a full Windows/PowerShell gotchas section** covering every
+real issue hit during actual Windows testing (Python version conflicts,
+PowerShell's `curl` alias, backgrounding processes, Postgres password
+resets, and more). Short version (Linux/Mac; see TESTING_STEPS.md for the
+Windows/PowerShell equivalents):
 
 ```bash
 pip install -r requirements.txt
@@ -106,13 +131,7 @@ pip install -r requirements.txt
 createdb idemp   # or via pgAdmin: create a database named "idemp"
 
 # reset schema
-python3 -c "
-import psycopg2
-from state_store import DSN
-with psycopg2.connect(DSN) as conn, conn.cursor() as cur:
-    with open('state_schema.sql') as f: cur.execute(f.read())
-    with open('action_ledger_schema.sql') as f: cur.execute(f.read())
-"
+python3 reset_db.py
 
 # start the service
 uvicorn service:app --host 0.0.0.0 --port 8000
